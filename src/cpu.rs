@@ -13,28 +13,21 @@ mod status;
 pub mod instruction;
 
 macro_rules! try_decode_as {
-  ($cpu:expr, $memory:expr, $opcode:expr; $I:ty) => {{
-    if let Ok(instruction) = <$I>::decode($cpu, $memory, $opcode) {
-      Ok(Box::new(instruction))
-    } else {
-      Err(CpuError::InvalidOpCode($opcode))
-    }
-  }};
-  ($cpu:expr, $memory:expr, $opcode:expr; $I:ty, $($J:ty),+) => {{
-    try_decode_as_helper!($cpu, $memory, $opcode, $I, $($J),+);
+  ($cpu:expr, $memory:expr, $opcode:expr; $($I:ty),+) => {{
+    _impl_try_decode_as!($cpu, $memory, $opcode; $($I),+);
     return Err(CpuError::InvalidOpCode($opcode));
   }};
 }
 
-macro_rules! try_decode_as_helper {
-  ($cpu:expr, $memory:expr, $opcode:expr, $I:ty) => {
+macro_rules! _impl_try_decode_as {
+  ($cpu:expr, $memory:expr, $opcode:expr; $I:ty) => {
     if let Ok(instruction) = <$I>::decode($cpu, $memory, $opcode) {
       return Ok(Box::new(instruction));
     }
   };
-  ($cpu:expr, $memory:expr, $opcode:expr, $I:ty, $($J:ty),+) => {
-    try_decode_as_helper!($cpu, $memory, $opcode, $I);
-    try_decode_as_helper!($cpu, $memory, $opcode, $($J),+);
+  ($cpu:expr, $memory:expr, $opcode:expr; $I:ty, $($J:ty),+) => {
+    _impl_try_decode_as!($cpu, $memory, $opcode; $I);
+    _impl_try_decode_as!($cpu, $memory, $opcode; $($J),+);
   };
 }
 

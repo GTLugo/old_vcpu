@@ -22,9 +22,13 @@ impl Instruction for NOP {
   fn decode(
     _cpu: &mut CPU,
     _memory: &dyn MemoryIO,
-    _opcode: u8
+    opcode: u8
   ) -> Result<Self, CpuError> {
-    Ok(Self)
+    if opcode == Self::OPCODE {
+      Ok(Self)
+    } else {
+      Err(CpuError::InvalidOpCode(opcode))
+    }
   }
 
   fn execute(&self, _cpu: &mut CPU, _memory: &mut dyn MemoryIO) -> Result<(), CpuError> {

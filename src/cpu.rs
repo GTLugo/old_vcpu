@@ -76,7 +76,7 @@ impl CPU {
       cycles_until_next_instruction = match cycles_until_next_instruction {
         0 => self.step(memory)? - 1,
         _ => {
-          debug!("|");
+          // debug!("|");
           cycles_until_next_instruction - 1
         }
       }

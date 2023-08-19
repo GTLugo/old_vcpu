@@ -17,40 +17,40 @@ pub enum LDA {
 }
 
 impl LDA {
-  pub const OPCODE_IMMEDIATE: u8 = 0xA9;
-  pub const OPCODE_ZERO_PAGE: u8 = 0xA5;
+  pub const OPCODE_IMMEDIATE:   u8 = 0xA9;
+  pub const OPCODE_ZERO_PAGE:   u8 = 0xA5;
   pub const OPCODE_ZERO_PAGE_X: u8 = 0xB5;
-  pub const OPCODE_ABSOLUTE: u8 = 0xAD;
-  pub const OPCODE_ABSOLUTE_X: u8 = 0xBD;
-  pub const OPCODE_ABSOLUTE_Y: u8 = 0xB9;
-  pub const OPCODE_INDIRECT_X: u8 = 0xA1;
-  pub const OPCODE_INDIRECT_Y: u8 = 0xB1;
+  pub const OPCODE_ABSOLUTE:    u8 = 0xAD;
+  pub const OPCODE_ABSOLUTE_X:  u8 = 0xBD;
+  pub const OPCODE_ABSOLUTE_Y:  u8 = 0xB9;
+  pub const OPCODE_INDIRECT_X:  u8 = 0xA1;
+  pub const OPCODE_INDIRECT_Y:  u8 = 0xB1;
 }
 
 impl Instruction for LDA {
   fn cycles(&self) -> u32 {
     match self {
-      Self::Immediate(_value)   => 2,
-      Self::ZeroPage(_address)  => 3,
-      Self::ZeroPageX(_address) => 4,
-      Self::Absolute(_address)  => 4,
+      Self::Immediate(_)        => 2,
+      Self::ZeroPage(_)         => 3,
+      Self::ZeroPageX(_)        => 4,
+      Self::Absolute(_)         => 4,
       Self::AbsoluteX(_address) => { 4 }
       Self::AbsoluteY(_address) => { 4 }
-      Self::IndirectX(_address) => 6,
+      Self::IndirectX(_)        => 6,
       Self::IndirectY(_address) => { 5 }
     }
   }
 
   fn opcode(&self) -> u8 {
     match self {
-      Self::Immediate(_value)   => Self::OPCODE_IMMEDIATE,
-      Self::ZeroPage(_address)  => Self::OPCODE_ZERO_PAGE,
-      Self::ZeroPageX(_address) => Self::OPCODE_ZERO_PAGE_X,
-      Self::Absolute(_address)  => Self::OPCODE_ABSOLUTE,
-      Self::AbsoluteX(_address) => Self::OPCODE_ABSOLUTE_X,
-      Self::AbsoluteY(_address) => Self::OPCODE_ABSOLUTE_Y,
-      Self::IndirectX(_address) => Self::OPCODE_INDIRECT_X,
-      Self::IndirectY(_address) => Self::OPCODE_INDIRECT_Y,
+      Self::Immediate(_) => Self::OPCODE_IMMEDIATE,
+      Self::ZeroPage(_)  => Self::OPCODE_ZERO_PAGE,
+      Self::ZeroPageX(_) => Self::OPCODE_ZERO_PAGE_X,
+      Self::Absolute(_)  => Self::OPCODE_ABSOLUTE,
+      Self::AbsoluteX(_) => Self::OPCODE_ABSOLUTE_X,
+      Self::AbsoluteY(_) => Self::OPCODE_ABSOLUTE_Y,
+      Self::IndirectX(_) => Self::OPCODE_INDIRECT_X,
+      Self::IndirectY(_) => Self::OPCODE_INDIRECT_Y,
     }
   }
 

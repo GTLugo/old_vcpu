@@ -1,6 +1,7 @@
 use tracing::{debug, info};
 
 use crate::cpu::instruction::Instruction;
+use crate::cpu::instruction::jmp::JMP;
 use crate::cpu::instruction::lda::LDA;
 use crate::cpu::instruction::nop::NOP;
 use crate::cpu::status::Status;
@@ -80,8 +81,17 @@ impl CPU {
 
   fn decode(&mut self, memory: &dyn MemoryIO, opcode: u8) -> Result<Box<dyn Instruction>, CpuError> {
     match opcode {
-      LDA::OPCODE_IMMEDIATE => Ok(Box::new(LDA::decode(self, memory, opcode)?)),
+      LDA::OPCODE_IMMEDIATE   |
+      LDA::OPCODE_ZERO_PAGE   |
+      LDA::OPCODE_ZERO_PAGE_X |
+      LDA::OPCODE_ABSOLUTE    |
+      LDA::OPCODE_ABSOLUTE_X  |
+      LDA::OPCODE_ABSOLUTE_Y  |
+      LDA::OPCODE_INDIRECT_X  |
+      LDA::OPCODE_INDIRECT_Y => Ok(Box::new(LDA::decode(self, memory, opcode)?)),
       NOP::OPCODE => Ok(Box::new(NOP::decode(self, memory, opcode)?)),
+      JMP::OPCODE_ABSOLUTE |
+      JMP::OPCODE_INDIRECT => Ok(Box::new(JMP::decode(self, memory, opcode)?)),
       _ => Err(CpuError::InvalidOpCode(opcode))
     }
   }

@@ -1,5 +1,6 @@
 pub mod lda;
 pub mod nop;
+pub mod jmp;
 
 use crate::cpu::CPU;
 use crate::error::CpuError;

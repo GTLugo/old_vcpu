@@ -18,32 +18,39 @@ pub enum LDA {
 
 impl LDA {
   pub const OPCODE_IMMEDIATE: u8 = 0xA9;
+  pub const OPCODE_ZERO_PAGE: u8 = 0xA5;
+  pub const OPCODE_ZERO_PAGE_X: u8 = 0xB5;
+  pub const OPCODE_ABSOLUTE: u8 = 0xAD;
+  pub const OPCODE_ABSOLUTE_X: u8 = 0xBD;
+  pub const OPCODE_ABSOLUTE_Y: u8 = 0xB9;
+  pub const OPCODE_INDIRECT_X: u8 = 0xA1;
+  pub const OPCODE_INDIRECT_Y: u8 = 0xB1;
 }
 
 impl Instruction for LDA {
   fn cycles(&self) -> u32 {
     match self {
-      LDA::Immediate(_value)   => 2,
-      LDA::ZeroPage(_address)  => 3,
-      LDA::ZeroPageX(_address) => 4,
-      LDA::Absolute(_address)  => 4,
-      LDA::AbsoluteX(_address) => { 4 }
-      LDA::AbsoluteY(_address) => { 4 }
-      LDA::IndirectX(_address) => 6,
-      LDA::IndirectY(_address) => { 5 }
+      Self::Immediate(_value)   => 2,
+      Self::ZeroPage(_address)  => 3,
+      Self::ZeroPageX(_address) => 4,
+      Self::Absolute(_address)  => 4,
+      Self::AbsoluteX(_address) => { 4 }
+      Self::AbsoluteY(_address) => { 4 }
+      Self::IndirectX(_address) => 6,
+      Self::IndirectY(_address) => { 5 }
     }
   }
 
   fn opcode(&self) -> u8 {
     match self {
-      LDA::Immediate(_value)   => LDA::OPCODE_IMMEDIATE,
-      LDA::ZeroPage(_address)  => 0xA5,
-      LDA::ZeroPageX(_address) => 0xB5,
-      LDA::Absolute(_address)  => 0xAD,
-      LDA::AbsoluteX(_address) => 0xBD,
-      LDA::AbsoluteY(_address) => 0xB9,
-      LDA::IndirectX(_address) => 0xA1,
-      LDA::IndirectY(_address) => 0xB1,
+      Self::Immediate(_value)   => Self::OPCODE_IMMEDIATE,
+      Self::ZeroPage(_address)  => Self::OPCODE_ZERO_PAGE,
+      Self::ZeroPageX(_address) => Self::OPCODE_ZERO_PAGE_X,
+      Self::Absolute(_address)  => Self::OPCODE_ABSOLUTE,
+      Self::AbsoluteX(_address) => Self::OPCODE_ABSOLUTE_X,
+      Self::AbsoluteY(_address) => Self::OPCODE_ABSOLUTE_Y,
+      Self::IndirectX(_address) => Self::OPCODE_INDIRECT_X,
+      Self::IndirectY(_address) => Self::OPCODE_INDIRECT_Y,
     }
   }
 
@@ -53,9 +60,9 @@ impl Instruction for LDA {
     opcode: u8
   ) -> Result<Self, CpuError> {
     match opcode {
-      LDA::OPCODE_IMMEDIATE => {
+      Self::OPCODE_IMMEDIATE => {
         let immediate = cpu.fetch(memory)?;
-        Ok(LDA::Immediate(immediate))
+        Ok(Self::Immediate(immediate))
       }
       _ => Err(CpuError::InvalidOpCode(opcode))
     }
@@ -63,16 +70,16 @@ impl Instruction for LDA {
 
   fn execute(&self, cpu: &mut CPU, _memory: &mut dyn MemoryIO) -> Result<(), CpuError> {
     match self {
-      LDA::Immediate(value) => {
+      Self::Immediate(value) => {
         cpu.accumulator = *value;
       }
-      LDA::ZeroPage(_)  => return Err(CpuError::Unspecified),
-      LDA::ZeroPageX(_) => return Err(CpuError::Unspecified),
-      LDA::Absolute(_)  => return Err(CpuError::Unspecified),
-      LDA::AbsoluteX(_) => return Err(CpuError::Unspecified),
-      LDA::AbsoluteY(_) => return Err(CpuError::Unspecified),
-      LDA::IndirectX(_) => return Err(CpuError::Unspecified),
-      LDA::IndirectY(_) => return Err(CpuError::Unspecified),
+      Self::ZeroPage(_)  => return Err(CpuError::Unspecified),
+      Self::ZeroPageX(_) => return Err(CpuError::Unspecified),
+      Self::Absolute(_)  => return Err(CpuError::Unspecified),
+      Self::AbsoluteX(_) => return Err(CpuError::Unspecified),
+      Self::AbsoluteY(_) => return Err(CpuError::Unspecified),
+      Self::IndirectX(_) => return Err(CpuError::Unspecified),
+      Self::IndirectY(_) => return Err(CpuError::Unspecified),
     }
 
     Ok(())
@@ -80,14 +87,14 @@ impl Instruction for LDA {
 
   fn debug(&self) -> String {
     match self {
-      LDA::Immediate(value) => format!("LDA #${value:X}"),
-      LDA::ZeroPage(_)  => "LDA".to_string(),
-      LDA::ZeroPageX(_) => "LDA".to_string(),
-      LDA::Absolute(_)  => "LDA".to_string(),
-      LDA::AbsoluteX(_) => "LDA".to_string(),
-      LDA::AbsoluteY(_) => "LDA".to_string(),
-      LDA::IndirectX(_) => "LDA".to_string(),
-      LDA::IndirectY(_) => "LDA".to_string(),
+      Self::Immediate(value) => format!("LDA #${value:X}"),
+      Self::ZeroPage(_)  => "LDA".to_string(),
+      Self::ZeroPageX(_) => "LDA".to_string(),
+      Self::Absolute(_)  => "LDA".to_string(),
+      Self::AbsoluteX(_) => "LDA".to_string(),
+      Self::AbsoluteY(_) => "LDA".to_string(),
+      Self::IndirectX(_) => "LDA".to_string(),
+      Self::IndirectY(_) => "LDA".to_string(),
     }
   }
 }

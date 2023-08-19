@@ -24,10 +24,9 @@ impl Instruction for NOP {
     _memory: &dyn MemoryIO,
     opcode: u8
   ) -> Result<Self, CpuError> {
-    if opcode == Self::OPCODE {
-      Ok(Self)
-    } else {
-      Err(CpuError::InvalidOpCode(opcode))
+    match opcode {
+      Self::OPCODE => Ok(Self),
+      _ => Err(CpuError::InvalidOpCode(opcode))
     }
   }
 

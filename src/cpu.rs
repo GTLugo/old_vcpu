@@ -40,15 +40,13 @@ pub struct CPU {
   x: u8,
   y: u8,
   status: Status,
-  time: Time,
 }
 
 impl CPU {
-  pub fn new(reset_vector: u16, clock_speed: f64) -> Self {
+  pub fn new(reset_vector: u16) -> Self {
     info!("initializing cpu");
     Self {
       reset_vector,
-      time: Time::new(clock_speed, 1024),
       ..Default::default()
     }
   }
@@ -67,22 +65,26 @@ impl CPU {
     memory.zero();
   }
 
-  pub fn continuous_step(&mut self, memory: &mut dyn MemoryIO) -> Result<(), CpuError> {
-    let mut cycles = 0;
+  pub fn continuous_step(&mut self, memory: &mut dyn MemoryIO, clock_speed: f64) -> Result<(), CpuError> {
+    let mut time = Time::new(clock_speed, 1024);
+    let mut cycles_until_next_instruction = 0;
     loop {
-      if self.time.next_tick() {
-        match cycles {
-          0 => cycles = self.step(memory)? - 1,
-          _ => {
-            debug!("|");
-            cycles -= 1;
-          }
+      if !time.should_execute_next_cycle() {
+        continue;
+      }
+
+      cycles_until_next_instruction = match cycles_until_next_instruction {
+        0 => self.step(memory)? - 1,
+        _ => {
+          debug!("|");
+          cycles_until_next_instruction - 1
         }
       }
     }
   }
 
   pub fn step(&mut self, memory: &mut dyn MemoryIO) -> Result<u32, CpuError> {
+    // debug!("{self:X?}");
     let pc = self.program_counter;
     let opcode = self.fetch(memory)?;
     let instruction = self.decode(memory, opcode)?;
@@ -117,7 +119,6 @@ impl Default for CPU {
       x: 0x00,
       y: 0x00,
       status: Default::default(),
-      time: Time::new(1000.0, 1024),
     }
   }
 }

@@ -17,6 +17,7 @@ pub struct Time {
   tick_delta_time: Duration,
 }
 
+#[allow(unused)]
 impl Time {
   pub fn new(tick_rate: f64, bail_threshold: u32) -> Self {
     Self {
@@ -64,7 +65,7 @@ impl Time {
   }
 
   // only use if you don't need to do anything in update, only fixed_update
-  pub(crate) fn next_tick(&mut self) -> bool {
+  pub(crate) fn should_execute_next_cycle(&mut self) -> bool {
     self.update();
     self.should_do_tick() && { // the AI made me do it... ;)
       self.tick();

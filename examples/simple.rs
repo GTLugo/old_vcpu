@@ -19,10 +19,10 @@ fn main() {
   bytes[0x8012] = 0x80; // $80
 
   let mut memory = Memory::new(bytes, 0x8000);
-  let mut cpu = CPU::new(0x8000, 3.0);
+  let mut cpu = CPU::new(0x8000);
 
   cpu.reset(&mut memory);
-  if let Err(err) = cpu.continuous_step(&mut memory) {
+  if let Err(err) = cpu.continuous_step(&mut memory, 3.0) {
     error!("{err}")
   };
 }

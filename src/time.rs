@@ -63,6 +63,15 @@ impl Time {
     Instant::now()
   }
 
+  // only use if you don't need to do anything in update, only fixed_update
+  pub(crate) fn next_tick(&mut self) -> bool {
+    self.update();
+    self.should_do_tick() && { // the AI made me do it... ;)
+      self.tick();
+      true
+    }
+  }
+
   pub(crate) fn update(&mut self) {
     self.current_frame = Instant::now();
     self.delta_time = self.current_frame - self.previous_frame;

@@ -63,14 +63,13 @@ impl CPU {
   pub fn continuous_step(&mut self, memory: &mut dyn MemoryIO) -> Result<(), CpuError> {
     let mut cycles = 0;
     loop {
-      self.time.update();
-      while self.time.should_do_tick() {
-        self.time.tick();
-        if cycles == 0 {
-          cycles = self.step(memory)? - 1;
-        } else {
-          debug!("|");
-          cycles -= 1;
+      if self.time.next_tick() {
+        match cycles {
+          0 => cycles = self.step(memory)? - 1,
+          _ => {
+            debug!("|");
+            cycles -= 1;
+          }
         }
       }
     }

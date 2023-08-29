@@ -1,5 +1,5 @@
-use crate::cpu::CPU;
 use crate::cpu::instruction::Instruction;
+use crate::cpu::CPU;
 use crate::error::CpuError;
 use crate::memory::MemoryIO;
 
@@ -19,14 +19,10 @@ impl Instruction for NOP {
     Self::OPCODE
   }
 
-  fn decode(
-    _cpu: &mut CPU,
-    _memory: &dyn MemoryIO,
-    opcode: u8
-  ) -> Result<Self, CpuError> {
+  fn decode(_cpu: &mut CPU, _memory: &dyn MemoryIO, opcode: u8) -> Result<Box<dyn Instruction>, CpuError> {
     match opcode {
-      Self::OPCODE => Ok(Self),
-      _ => Err(CpuError::InvalidOpCode(opcode))
+      Self::OPCODE => Ok(Box::new(Self)),
+      _ => Err(CpuError::InvalidOpCode(opcode)),
     }
   }
 

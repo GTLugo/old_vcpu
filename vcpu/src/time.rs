@@ -67,7 +67,8 @@ impl Time {
   // only use if you don't need to do anything in update, only fixed_update
   pub(crate) fn should_execute_next_cycle(&mut self) -> bool {
     self.update();
-    self.should_do_tick() && { // the AI made me do it... ;)
+    self.should_do_tick() && {
+      // the AI made me do it... ;)
       self.tick();
       true
     }

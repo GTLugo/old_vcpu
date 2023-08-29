@@ -1,8 +1,8 @@
-use strum::Display;
-use crate::cpu::CPU;
 use crate::cpu::instruction::Instruction;
+use crate::cpu::CPU;
 use crate::error::CpuError;
 use crate::memory::MemoryIO;
+use strum::Display;
 
 #[derive(Debug, Display)]
 pub enum LDA {
@@ -17,14 +17,14 @@ pub enum LDA {
 }
 
 impl LDA {
-  pub const OPCODE_IMMEDIATE:   u8 = 0xA9;
-  pub const OPCODE_ZERO_PAGE:   u8 = 0xA5;
+  pub const OPCODE_IMMEDIATE: u8   = 0xA9;
+  pub const OPCODE_ZERO_PAGE: u8   = 0xA5;
   pub const OPCODE_ZERO_PAGE_X: u8 = 0xB5;
-  pub const OPCODE_ABSOLUTE:    u8 = 0xAD;
-  pub const OPCODE_ABSOLUTE_X:  u8 = 0xBD;
-  pub const OPCODE_ABSOLUTE_Y:  u8 = 0xB9;
-  pub const OPCODE_INDIRECT_X:  u8 = 0xA1;
-  pub const OPCODE_INDIRECT_Y:  u8 = 0xB1;
+  pub const OPCODE_ABSOLUTE: u8    = 0xAD;
+  pub const OPCODE_ABSOLUTE_X: u8  = 0xBD;
+  pub const OPCODE_ABSOLUTE_Y: u8  = 0xB9;
+  pub const OPCODE_INDIRECT_X: u8  = 0xA1;
+  pub const OPCODE_INDIRECT_Y: u8  = 0xB1;
 }
 
 impl Instruction for LDA {
@@ -34,10 +34,10 @@ impl Instruction for LDA {
       Self::ZeroPage(_)         => 3,
       Self::ZeroPageX(_)        => 4,
       Self::Absolute(_)         => 4,
-      Self::AbsoluteX(_address) => { 4 }
-      Self::AbsoluteY(_address) => { 4 }
+      Self::AbsoluteX(_address) => 4,
+      Self::AbsoluteY(_address) => 4,
       Self::IndirectX(_)        => 6,
-      Self::IndirectY(_address) => { 5 }
+      Self::IndirectY(_address) => 5,
     }
   }
 
@@ -54,17 +54,13 @@ impl Instruction for LDA {
     }
   }
 
-  fn decode(
-    cpu: &mut CPU,
-    memory: &dyn MemoryIO,
-    opcode: u8
-  ) -> Result<Self, CpuError> {
+  fn decode(cpu: &mut CPU, memory: &dyn MemoryIO, opcode: u8) -> Result<Box<dyn Instruction>, CpuError> {
     match opcode {
       Self::OPCODE_IMMEDIATE => {
         let immediate = cpu.fetch(memory)?;
-        Ok(Self::Immediate(immediate))
+        Ok(Box::new(Self::Immediate(immediate)))
       }
-      _ => Err(CpuError::InvalidOpCode(opcode))
+      _ => Err(CpuError::InvalidOpCode(opcode)),
     }
   }
 

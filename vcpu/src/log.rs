@@ -17,8 +17,8 @@ impl From<Level> for LevelFilter {
     match value {
       Level::Trace => LevelFilter::TRACE,
       Level::Debug => LevelFilter::DEBUG,
-      Level::Info  => LevelFilter::INFO,
-      Level::Warn  => LevelFilter::WARN,
+      Level::Info => LevelFilter::INFO,
+      Level::Warn => LevelFilter::WARN,
       Level::Error => LevelFilter::ERROR,
     }
   }
@@ -53,7 +53,7 @@ pub fn init(user_logging_level: Option<Level>) {
   tracing_subscriber::fmt()
     .with_max_level(match user_logging_level {
       None => LevelFilter::OFF,
-      Some(l) => l.into()
+      Some(l) => l.into(),
     })
     .with_thread_names(true)
     .init();

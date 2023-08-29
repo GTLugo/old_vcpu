@@ -1,0 +1,77 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+BIN_PROJECT = "sandbox"
+
+[env.development]
+BUILD_TYPE = "debug"
+
+[env.release]
+BUILD_TYPE = "release"
+
+[config]
+skip_core_tasks = true
+
+[tasks.default]
+workspace = false
+alias = "build_flow"
+
+[tasks.run]
+workspace = false
+command = "cargo"
+args = [
+  "run",
+  "${RELEASE_FLAG}", 
+  "--bin", "${BIN_PROJECT}"
+  ]
+dependencies = ["build_flow"]
+
+[tasks.build_flow]
+workspace = false
+dependencies = [
+    "build_debug",
+    "build_release",
+    # "copy_resources",
+    "assemble"
+]
+
+[tasks.build_debug]
+workspace = false
+condition = { profiles = ["development"] }
+command = "cargo"
+args = [
+  "build"
+]
+
+[tasks.build_release]
+workspace = false
+condition = { profiles = ["release"] }
+command = "cargo"
+args = [
+  "build",
+  "--release"
+]
+
+# [tasks.copy_resources]
+# workspace = false
+# condition = { files_modified = { input = ["${CARGO_MAKE_WORKING_DIRECTORY}/Cargo.toml", "./vcpu_6502/res/**/*"], output = ["./target/${BUILD_TYPE}/res/**/*"] } }
+# script_runner = "@shell"
+# script = '''
+#   cp -rf ./vcpu_6502/res ./target/${BUILD_TYPE}/res/
+# '''
+# dependencies = ["del_resources"]
+
+# [tasks.del_resources]
+# workspace = false
+# condition = { files_exist = ["./target/${BUILD_TYPE}/res"] }
+# script_runner = "@shell"
+# script = '''
+#   rm -rf ./target/${BUILD_TYPE}/res
+# '''
+
+[tasks.assemble]
+workspace = false
+script_runner = "@shell"
+script = '''
+  mkdir ./target/${BUILD_TYPE}/asm
+  vasm6502_oldstyle -Fbin -dotdir ./${BIN_PROJECT}/asm/f.asm -o ./target/${BUILD_TYPE}/asm/f.asm
+'''

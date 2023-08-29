@@ -8,14 +8,22 @@ pub enum CpuError {
   InvalidOpCode(u8),
   #[error("program counter overflowed")]
   ProgramCounterOverflow,
-  #[error("unspecified cpu error")]
-  Unspecified,
+  #[error("stack overflow")]
+  StackOverflow,
+  #[error("stack underflow")]
+  StackUnderflow,
   #[error("feature not implemented")]
   Unimplemented,
+  #[error("{0}")]
+  Other(String),
+  #[error("unspecified cpu error")]
+  Unspecified,
 }
 
 #[derive(Error, Debug)]
 pub enum MemoryError {
+  #[error("memory read in exceeds max limit")]
+  MemoryLimitExceeded,
   #[error("memory address `0x{0:04X}` is invalid")]
   InvalidAddress(u16),
   #[error("attempted to write to read-only memory address `0x{0:04X}`")]

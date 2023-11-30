@@ -1,0 +1,28 @@
+#[location(0x0000_0000_0010_0000)]
+start:
+  a::set_lower(0x00FF).
+  write<128>(0x1016, a).
+
+loop:
+  a::set_upper(69).
+  a::set_lower(69).
+  b = read<128>(0x1016).
+  write<128>(0x1000, a).
+  // a = add(b, c).
+  goto loop.
+
+
+// #[insert<128>(0x6969)] write 128-bit value to current memory address
+// Instruction format:
+// | opcode: 16 | ra: 8 | rb: 8 | rc: 8 | shift: 8 | RESERVED: 16 | immediate: 64 |
+// set max 128-bit value into a0:
+//      F0 10 00 00  08 00 00 00  FF FF FF FF  FF FF FF FF
+//      F0 11 00 00  08 00 00 00  FF FF FF FF  FF FF FF FF
+// add a0 and a1 and store in a2:
+//      F0 AA 08 09  0A 00 00 00  00 00 00 00  00 00 00 00
+
+// 0x0000_0000_0000_0000                         : Null address, first 16 bytes are reserved.
+// 0x0000_0000_0000_0010 - 0x0000_0000_000F_FFFF : Reserved for system use (exception handling, OS core services, etc.).
+// 0x0000_0000_0010_0000 - 0x0000_0001_FFFF_FFFF : ROM; reset vector points here. includes bootloader, firmware, etc.
+// 0x0000_0002_0000_0000 - 0x0000_0002_FFFF_FFFF : Hardware registers (communication with peripherals).
+// 0x0000_0003_0000_0000 - 0xFFFF_FFFF_FFFF_FFFF : General-purpose RAM (stack, heap, program code, etc.).

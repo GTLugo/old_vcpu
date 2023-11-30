@@ -1,31 +1,33 @@
-use tracing::{debug, error};
+use tracing::error;
 
-use vcpu::cpu::CPU;
-use vcpu::error::CpuError;
+use bau::bau::BAU;
+use vcpu::error::Error;
 use vcpu::log;
-use vcpu::memory::Memory;
 
 fn main() {
   if let Err(error) = run() {
+    // this is just so that the error is emitted as part of the logging
     error!("{error}");
   }
 }
 
-fn run() -> Result<(), CpuError> {
+fn run() -> Result<(), Error> {
   log::init_max();
 
-  debug!("{:?}", std::env::current_dir());
+  let bau = BAU::new();
+  let asm = bau.assemble("res/asm/assembly.bau")?;
 
-  let asm = std::fs::read("./asm/f.asm")
-    .map_err(|error| CpuError::Other(format!("{error}")))?;
+  // let mut memory = MMU {
+  //   rom
+  // }
+  // let mut cpu = CPU::new(0x0000);
+  //
+  // cpu.continuous_step(&mut memory, 5.0)
+  //   .map_err(|error| {
+  //     // debug!("CPU DUMP\n{}", cpu.dump());
+  //     // debug!("MEMORY DUMP\n{}", memory.dump());
+  //     error
+  //   })
 
-  let mut memory = Memory::new(&asm, 0x8000)?;
-  let mut cpu = CPU::new(0x0000);
-
-  cpu.continuous_step(&mut memory, 5.0)
-    .map_err(|error| {
-      debug!("CPU DUMP\n{}", cpu.dump());
-      debug!("MEMORY DUMP\n{}", memory.dump());
-      error
-    })
+  Ok(())
 }

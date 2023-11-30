@@ -1,0 +1,13 @@
+reset: @ 0x8000;
+  a0 = 0x00FF;
+  [0x6002] = a0;
+
+loop:
+  a0 = 0x0055;
+  [0x6000] = a0;
+  if a0 == a1 goto loop;
+  goto loop;
+
+@ 0xFFFC; //
+u16 reset; // store reset vector location as a 16-bit word
+u16 0x6969;

@@ -1,91 +1,61 @@
-use std::cmp::Ordering;
-
-use tracing::info;
-
 use crate::error::MemoryError;
+
+pub mod ram;
+pub mod rom;
+pub mod disk;
+pub mod mmu;
 
 // TODO: Research making this a trait instead to allow more custom Memory implementations
 
 
-pub trait MemoryIO {
-  fn read(&self, address: u16) -> Result<u8, MemoryError>;
-  fn write(&mut self, address: u16, value: u8) -> Result<(), MemoryError>;
-  fn zero(&mut self);
-}
-
-#[derive(Debug)]
-pub struct Memory {
-  bytes: Vec<u8>,
-  read_only_begin: u16,
-}
-
-impl Memory {
-  // 8-bit can only access up to 64k
-  pub const MAX: usize = 1024 * 64;
-
-  pub fn new(byte_slice: &[u8], read_only_begin: u16) -> Result<Self, MemoryError> {
-    let bytes = match byte_slice.len().cmp(&Self::MAX) {
-      Ordering::Less => {
-        let mut vec = byte_slice.to_vec();
-        vec.extend(vec![0x00; Self::MAX - byte_slice.len()]);
-        vec
-      }
-      Ordering::Equal => byte_slice.to_vec(),
-      Ordering::Greater => return Err(MemoryError::MemoryLimitExceeded),
-    };
-
-    Ok(Self {
-      bytes,
-      read_only_begin,
-    })
+pub trait MemoryRead {
+  fn read_u8(&self, address: u64) -> Result<u8, MemoryError>;
+  fn read_u16(&self, address: u64) -> Result<u16, MemoryError> {
+    let lo = self.read_u8(address)?;
+    let hi = self.read_u8(address + 1)?;
+    Ok(u16::from_le_bytes([lo, hi]))
   }
-
-  pub fn dump(&self) -> String {
-    self.bytes.iter().enumerate().fold(String::new(), |acc, (i, x)| {
-      match (i + 1) % 16 {
-        0 => format!("{acc}{x:02X}\n"),
-        1 => format!("{acc}[{i:04X}] {x:02X} "),
-        4 | 8 | 12 => format!("{acc}{x:02X}  "),
-        _ => format!("{acc}{x:02X} "),
-      }
-    })
+  fn read_u32(&self, address: u64) -> Result<u32, MemoryError> {
+    let mut bytes = [0; 4];
+    bytes[0..2].copy_from_slice(&self.read_u16(address)?.to_le_bytes());
+    bytes[2..4].copy_from_slice(&self.read_u16(address + 2)?.to_le_bytes());
+    Ok(u32::from_le_bytes(bytes))
+  }
+  fn read_u64(&self, address: u64) -> Result<u64, MemoryError> {
+    let mut bytes = [0; 8];
+    bytes[0..4].copy_from_slice(&self.read_u16(address)?.to_le_bytes());
+    bytes[4..8].copy_from_slice(&self.read_u16(address + 4)?.to_le_bytes());
+    Ok(u64::from_le_bytes(bytes))
+  }
+  fn read_u128(&self, address: u64) -> Result<u128, MemoryError> {
+    let mut bytes = [0; 16];
+    bytes[0..8].copy_from_slice(&self.read_u16(address)?.to_le_bytes());
+    bytes[8..16].copy_from_slice(&self.read_u16(address + 8)?.to_le_bytes());
+    Ok(u128::from_le_bytes(bytes))
   }
 }
 
-impl MemoryIO for Memory {
-  fn read(&self, address: u16) -> Result<u8, MemoryError> {
-    self.bytes
-      .get(address as usize)
-      .ok_or(MemoryError::InvalidAddress(address))
-      .copied()
+pub trait MemoryWrite {
+  fn write_u8(&mut self, address: u64, value: u8) -> Result<(), MemoryError>;
+  fn write_u16(&mut self, address: u64, value: u16) -> Result<(), MemoryError> {
+    self.write_bytes(address, &value.to_le_bytes())
   }
-
-  fn write(&mut self, address: u16, value: u8) -> Result<(), MemoryError> {
-    match self.bytes.get_mut(address as usize) {
-      Some(v) => {
-        if address < self.read_only_begin {
-          *v = value;
-          Ok(())
-        } else {
-          Err(MemoryError::WriteToRomAddress(address))
-        }
-      }
-      None => Err(MemoryError::InvalidAddress(address)),
-    }
+  fn write_u32(&mut self, address: u64, value: u32) -> Result<(), MemoryError> {
+    self.write_bytes(address, &value.to_le_bytes())
   }
-
-  fn zero(&mut self) {
-    info!("zeroing memory");
-    let ram = &mut self.bytes[0..self.read_only_begin as usize];
-    ram.fill(0);
+  fn write_u64(&mut self, address: u64, value: u64) -> Result<(), MemoryError> {
+    self.write_bytes(address, &value.to_le_bytes())
   }
-}
-
-impl Default for Memory {
-  fn default() -> Self {
-    Self {
-      bytes: vec![0x00; Self::MAX],
-      read_only_begin: 0xFFFC,
-    }
+  fn write_u128(&mut self, address: u64, value: u128) -> Result<(), MemoryError> {
+    self.write_bytes(address, &value.to_le_bytes())
+  }
+  fn write_bytes(&mut self, address: u64, bytes: &[u8]) -> Result<(), MemoryError> {
+    bytes.iter()
+      .enumerate()
+      .try_for_each(|(i, byte)| {
+        let address = address.checked_add(i as u64)
+          .ok_or_else(|| MemoryError::MemoryOverflow)?;
+        self.write_u8(address, *byte)
+      })
   }
 }

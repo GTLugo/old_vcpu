@@ -8,9 +8,10 @@ authors = ["Gabriel Lugo"]
 
 [dependencies]
 bytemuck = "1.13.1"
+strum = { version = "0.25.0", features = ["derive"] }
 
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
-strum = { version = "0.25.0", features = ["derive"] }
-
 thiserror = "1.0.44"
+
+bau = { path = "../bau" }

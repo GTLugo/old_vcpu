@@ -1,47 +1,55 @@
 use tracing::{info, trace};
+use bau::instruction::Instruction;
 
-use crate::cpu::instruction::jmp::JMP;
-use crate::cpu::instruction::lda::LDA;
-use crate::cpu::instruction::nop::NOP;
-use crate::cpu::instruction::Instruction;
-use crate::cpu::instruction::jsr::JSR;
-use crate::cpu::instruction::sta::STA;
 use crate::cpu::status::Status;
 use crate::error::CpuError;
-use crate::memory::MemoryIO;
+use crate::memory::MemoryRead;
+use crate::memory::mmu::MMU;
 use crate::time::Time;
 
-pub mod instruction;
 mod status;
 
-type InstructionFn = fn(&mut CPU, &dyn MemoryIO, u8) -> Result<Box<dyn Instruction>, CpuError>;
+pub struct Clock {
 
-#[derive(Default, Debug)]
+}
+
+pub trait ClockObserver {
+
+}
+
+pub struct DataBus {
+  // TODO: Data will be sent onto the bus on the clock tick and read from the bus on the clock tick
+}
+
+pub trait DataBusObserver {
+
+}
+
+// memory_bus will be a u128. send/receive data from memory address sent
+// address_bus will be a u64. send address to r/w to/from
+#[derive(Debug)]
 pub struct CPU {
-  reset_vector: u16,
-  program_counter: u16,
-  stack_pointer: u8,
-
-  accumulator: u8,
-  x: u8,
-  y: u8,
-
   status: Status,
+
+  // special registers: will have first bit set
+  zero_register: u128,        // always holds zero
+  one_register: u128,         // always holds one
+  two_register: u128,         // always holds two
+  program_counter: u64,       // each memory address points to 1 byte, therefore increment by 16
+  instruction_register: u128, // current fetched instruction
+  stack_pointer: u64,         //
+  frame_pointer: u64,         // base of the current stack frame
+  return_address: u64,        // address to return to after subroutine
+  // general registers
+  registers: [u128; 26],
 }
 
 impl CPU {
-  const INSTRUCTIONS: &'static [InstructionFn] = &[
-    LDA::decode,
-    NOP::decode,
-    JMP::decode,
-    JSR::decode,
-    STA::decode,
-  ];
+  const INSTRUCTION_WIDTH: u64 = 16;
 
-  pub fn new(reset_vector: u16) -> Self {
+  pub fn new(reset_address: u64) -> Self {
     info!("initializing cpu");
     let mut cpu = Self {
-      reset_vector,
       ..Default::default()
     };
 
@@ -52,7 +60,7 @@ impl CPU {
 
   pub fn continuous_step(
     &mut self,
-    memory: &mut dyn MemoryIO,
+    memory: &mut MMU,
     clock_speed: f64,
   ) -> Result<(), CpuError> {
     let mut time = Time::new(clock_speed, 1024);
@@ -72,171 +80,53 @@ impl CPU {
     }
   }
 
-  pub fn step(&mut self, memory: &mut dyn MemoryIO) -> Result<u32, CpuError> {
+  pub fn step(&mut self, memory: &mut MMU) -> Result<u32, CpuError> {
     // debug!("{self:X?}");
-    let pc = self.program_counter;
-    let opcode = self.fetch(memory)?;
-    let instruction = self.decode(memory, opcode)?;
-    trace!("[{pc:04X}]: {}", instruction.debug());
-    instruction.execute(self, memory)?;
-    Ok(instruction.cycles())
-  }
-
-  pub fn dump(&self) -> String {
-    format!(
-      "RESET_VECTOR: ${:04X}\
-       \nCPU Registers {{\
-       \n  PC : ${:04X}\
-       \n  SP : ${:02X}\
-       \n  A  : ${:02X}\
-       \n  X  : ${:02X}\
-       \n  Y  : ${:02X}\
-       \n}}\
-       \nCPU Status {{\
-       \n  CARRY             : {}\
-       \n  ZERO              : {}\
-       \n  INTERRUPT_DISABLE : {}\
-       \n  DECIMAL           : {}\
-       \n  BREAK_COMMAND     : {}\
-       \n  OVERFLOW          : {}\
-       \n  NEGATIVE          : {}\
-       \n}}",
-      self.reset_vector,
-      self.program_counter,
-      self.stack_pointer,
-      self.accumulator,
-      self.x,
-      self.y,
-      self.status.carry as i32,
-      self.status.zero as i32,
-      self.status.interrupt_disable as i32,
-      self.status.decimal as i32,
-      self.status.break_command as i32,
-      self.status.overflow as i32,
-      self.status.negative as i32
-    )
+    // let pc = self.program_counter;
+    let instruction = self.fetch(memory)?;
+    let instruction = Instruction::decode(instruction);
+    // trace!("[{pc:04X}]: {}", instruction.debug());
+    // instruction.execute(self, memory)?;
+    // Ok(instruction.cycles())
+    Err(CpuError::Unimplemented)
   }
 }
 
 impl CPU {
   fn reset(&mut self) {
     info!("resetting cpu");
-    self.program_counter = self.reset_vector;
-
-    self.stack_pointer = 0x00;
-    self.accumulator = 0x00;
-    self.x = 0x00;
-    self.y = 0x00;
-
-    self.status.reset();
   }
 
-  fn fetch(&mut self, memory: &dyn MemoryIO) -> Result<u8, CpuError> {
-    let byte = memory.read(self.program_counter)?;
-    self.program_counter = self
-      .program_counter
-      .checked_add(1)
-      .ok_or(CpuError::ProgramCounterOverflow)?;
-    Ok(byte)
+  fn fetch(&mut self, memory: &MMU) -> Result<u128, CpuError> {
+    let instruction = memory.read_u128(self.program_counter)?;
+    self.program_counter += Self::INSTRUCTION_WIDTH;
+    Ok(instruction)
   }
 
-  fn fetch_word(&mut self, memory: &dyn MemoryIO) -> Result<u16, CpuError> {
-    let lo = self.fetch(memory)?;
-    let hi = self.fetch(memory)?;
-    Ok(u16::from_le_bytes([lo, hi]))
-  }
-
-  fn decode(
-    &mut self,
-    memory: &dyn MemoryIO,
-    opcode: u8,
-  ) -> Result<Box<dyn Instruction>, CpuError> {
-    for decoder in Self::INSTRUCTIONS {
-      if let Ok(instruction) = decoder(self, memory, opcode) {
-        return Ok(instruction);
-      }
+  fn execute(&mut self, memory: &mut MMU, instruction: Instruction) -> Result<(), CpuError> {
+    match instruction {
+      Instruction::Null => Ok(()),
+      Instruction::SetLo { .. } => Err(CpuError::Unimplemented),
+      Instruction::SetHi { .. } => Err(CpuError::Unimplemented),
+      Instruction::Load { .. } => Err(CpuError::Unimplemented),
+      Instruction::Store { .. } => Err(CpuError::Unimplemented),
     }
-
-    Err(CpuError::InvalidOpCode(opcode))
-  }
-
-  fn stack_address(&self) -> u16 {
-    u16::from_le_bytes([self.stack_pointer, 0x01])
-  }
-
-  fn stack_push(&mut self, memory: &mut dyn MemoryIO, value: u8) -> Result<(), CpuError> {
-    let stack_address = self.stack_address();
-    memory.write(stack_address, value)?;
-    self.stack_pointer = self
-      .stack_pointer
-      .checked_add(1)
-      .ok_or(CpuError::StackOverflow)?;
-    Ok(())
-  }
-
-  fn stack_push_word(&mut self, memory: &mut dyn MemoryIO, value: u16) -> Result<(), CpuError> {
-    let [lo, hi] = value.to_le_bytes();
-
-    self.stack_push(memory, lo)?;
-    self.stack_push(memory, hi)?;
-
-    Ok(())
-  }
-
-  fn stack_pull(&mut self, memory: &dyn MemoryIO) -> Result<u8, CpuError> {
-    let stack_address = self.stack_address();
-    let value = memory.read(stack_address)?;
-    self.stack_pointer = self
-      .stack_pointer
-      .checked_sub(1)
-      .ok_or(CpuError::StackUnderflow)?;
-    Ok(value)
-  }
-
-  fn stack_pull_word(&mut self, memory: &dyn MemoryIO) -> Result<u16, CpuError> {
-    let hi = self.stack_pull(memory)?;
-    let lo = self.stack_pull(memory)?;
-    let value = u16::from_le_bytes([lo, hi]);
-    Ok(value)
   }
 }
 
-struct DataBus {
-  value: u8,
-}
-
-impl DataBus {
-  pub fn new() -> Self {
+impl Default for CPU {
+  fn default() -> Self {
     Self {
-      value: 0x00,
+      status: Default::default(),
+      zero_register: 0,
+      one_register: 1,
+      two_register: 2,
+      program_counter: 0,
+      instruction_register: 0,
+      stack_pointer: 0,
+      frame_pointer: 0,
+      return_address: 0,
+      registers: [0; 26],
     }
-  }
-
-  pub fn read(&self) -> u8 {
-    self.value
-  }
-
-  pub fn write(&mut self, value: u8) {
-    self.value = value;
-  }
-}
-
-struct Register {
-  value: u8,
-}
-
-impl Register {
-  pub fn new() -> Self {
-    Self {
-      value: 0x00
-    }
-  }
-
-  pub fn push_to_bus(&self, bus: &mut DataBus) {
-    bus.write(self.value);
-  }
-
-  pub fn pull_from_bus(&mut self, bus: &DataBus) {
-    self.value = bus.read();
   }
 }
